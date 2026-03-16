@@ -1,0 +1,78 @@
+# Login
+az login
+# login in ACR
+az acr login
+
+# Variables
+acr=acrcontainersapp
+rg=rg-containersapp
+local=eastus
+
+# Create resource group
+az group create -n $rg -l $local
+
+# Check if ACR exists
+az acr check-name -n $acr
+
+# Create ACR
+az acr create -n $acr --resource-group $rg -l $local --sku Basic
+
+# Show acr endpoint
+az acr show-endpoints -n $acr
+
+# Enable admin user
+az acr update --name $acr --admin-enabled true
+
+# List ACRs
+az acr list -g $rg -o table
+
+# Show ACR details
+az acr show -n $acr
+
+# Push image to ACR
+#Variables
+img=site-html
+
+# Build image
+docker build -t $img .
+
+# Tag image
+docker tag $img $acr.azurecr.io/$img
+
+# Or build and tag in one step
+# docker build -t $acr.azurecr.io/$img .
+
+# Push image to ACR
+docker push $acr.azurecr.io/$img
+
+# Create app service plan and app service for containers
+# Variables
+appplan=plano-containers
+appservice=spotlesssitehml
+
+# Create app service plan with sku S1 and linux
+az appservice plan create -g $rg -n $appplan --sku B1 --location canadaeast --is-linux
+
+# Create app service for containers
+az webapp create -g $rg -p $appplan -n $appservice -i $acr.azurecr.io/$img:v1
+
+# Continuous deployment
+az webapp deployment container config --enable-cd true -g $rg -n $appservice
+
+# Show URL Continuous deployment
+az webapp deployment container show-cd-url -g $rg -n $appservice -o tsv
+
+#Get URL to set up webhook in ACR
+cicd=$(az webapp deployment container show-cd-url -g $rg -n $appservice --query CI_CD_URL -o tsv)
+
+# Create webhook in ACR
+#Variables
+webhook=webhookacrv1
+
+az acr webhook create -n $webhook -r $acr --uri $cicd --actions push --scope $img
+
+# Show webhook events
+az acr webhook list-events -n $webhook -r $acr
+
+# Ping webhook
+az acr webhook ping -n $webhook -r $acr
