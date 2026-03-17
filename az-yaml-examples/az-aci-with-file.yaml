@@ -1,0 +1,34 @@
+#exemplo retirado do Learn do Microsoft Docs - https://learn.microsoft.com/en-us/azure/container-instances/container-instances-volume-azure-files?tabs=azure-cli
+apiVersion: "2019-12-01"
+location: eastus
+name: file-share-demo
+properties:
+  containers:
+    - name: hellofiles
+      properties:
+        environmentVariables: []
+        image: mcr.microsoft.com/azuredocs/aci-hellofiles
+        ports:
+          - port: 80
+        resources:
+          requests:
+            cpu: 1.0
+            memoryInGB: 1.5
+        volumeMounts:
+          - mountPath: /aci/logs/
+            name: filesharevolume
+  osType: Linux
+  restartPolicy: Always
+  ipAddress:
+    type: Public
+    ports:
+      - port: 80
+    dnsNameLabel: aci-demo
+  volumes:
+    - name: filesharevolume
+      azureFile:
+        shareName: acishare
+        storageAccountName: <Storage account name>
+        storageAccountKey: <Storage account key>
+tags: {}
+type: Microsoft.ContainerInstance/containerGroups

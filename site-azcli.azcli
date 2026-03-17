@@ -45,6 +45,9 @@ docker tag $img $acr.azurecr.io/$img
 # Push image to ACR
 docker push $acr.azurecr.io/$img
 
+#list images in ACR
+az acr repository list -n $acr -o table
+
 # Create app service plan and app service for containers
 # Variables
 appplan=plano-containers
@@ -76,3 +79,6 @@ az acr webhook list-events -n $webhook -r $acr
 
 # Ping webhook
 az acr webhook ping -n $webhook -r $acr
+
+# remove resource group
+az group delete -n $rg --no-wait

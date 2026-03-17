@@ -1,0 +1,60 @@
+# Variables
+rg=rgdio204
+local=canadacentral
+envname=envdio204
+acr=acrdio204
+DNS_NAME_LABEL=aci-example-$RANDOM
+
+# Login
+az login
+
+#Active ACA extension
+az extension add --name containerapp --upgrade
+
+# Register Microsoft.OperationalInsights provider
+az provider register -n Microsoft.OperationalInsights --wait
+
+# Create resource group
+az group create -n $rg -l $local
+
+# Create Container app environment
+az containerapp env create -g $rg -n $envname --location $local
+
+# Create app
+az containerapp create \
+-g $rg \
+--name site3 \
+--environment $envname \
+--image renanscosta/site-demo:latest \
+--target-port 80 \
+--ingress 'external' \
+--secrets 'connectionstring=DefaultEndpointsProtocol=https;AccountName=diostorage204;AccountKey=KEY;EndpointSuffix=core.windows.net' \
+--env-vars 'CONNECTION_STRING=secretref:connectionstring'
+
+# update app replicas
+az containerapp update \
+-g $rg \
+--name site2 \
+--max-replicas 3 \
+--min-replicas 1
+
+# Show revisions
+az containerapp revision list \
+-g $rg \
+-n site2 \
+--output table \
+--all
+
+# View logs
+az containerapp logs show \
+-g $rg \
+-n site
+
+# Show app details
+az containerapp show \
+-g $rg \
+-n site
+
+
+# remove resource group
+az group delete -n $rg --no-wait
